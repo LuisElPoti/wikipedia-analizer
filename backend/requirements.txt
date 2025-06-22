@@ -7,3 +7,8 @@ requests
 python-dotenv
 textblob
 spacy
+pytest
+httpx
+pytest-asyncio
+sqlalchemy
+psycopg2

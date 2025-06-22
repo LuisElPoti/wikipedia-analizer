@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.services.wikipedia_service import search_wikipedia, get_article_summary
-from app.services.analysis_service import analyze_text, analyze_sentiment, extract_named_entities
-from app.schemas.article import ArticleResponse
+from sqlalchemy.orm import Session
+from typing import List
+from services.wikipedia_service import search_wikipedia, get_article_summary
+from services.analysis_service import analyze_text, analyze_sentiment, extract_named_entities
+from schemas.article import ArticleResponse
+
 
 router = APIRouter()
 
-@router.get("/search", response_model=list[dict])
+@router.get("/search", response_model=List[dict])
 def search_articles(q: str):
     try:
         results = search_wikipedia(q)
@@ -21,6 +24,12 @@ def get_article_detail(title: str):
         top_words = analyze_text(summary)
         sentiment = analyze_sentiment(summary)
         named_entities = extract_named_entities(summary)
-        return ArticleResponse(title=title, summary=summary, top_words=top_words, sentiment=sentiment, named_entities=named_entities)
+        return ArticleResponse(
+            title=title,
+            summary=summary,
+            top_words=top_words,
+            sentiment=sentiment,
+            named_entities=named_entities
+        )
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Article '{title}' not found")

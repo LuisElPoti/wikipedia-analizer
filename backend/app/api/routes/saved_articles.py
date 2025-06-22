@@ -1,57 +1,59 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from typing import List
-from app.db.prisma_client import prisma
-from app.schemas.saved_article import SavedArticleCreate, SavedArticleResponse
+from schemas.saved_article import SavedArticleResponse, SavedArticleCreate
+from db.deps import get_db
+from db.models import SavedArticle
 import json
 
 router = APIRouter()
 
 @router.post("/saved_articles/", response_model=SavedArticleResponse)
-async def save_article(article: SavedArticleCreate):
-    created = await prisma.savedarticle.create(
-        data={
-            "title": article.title,
-            "url": article.url,
-            "summary": article.summary,
-            "topWords": json.dumps(article.top_words),  # Guarda como JSON string
-            "sentiment": json.dumps(article.sentiment),
-            "namedEntities": json.dumps(article.named_entities),
-            "note": article.note
-        }
-    )
-    return SavedArticleResponse(
-        id=created.id,
-        title=created.title,
-        url=created.url,
-        summary=created.summary,
-        top_words=json.loads(created.topWords),
-        sentiment=json.loads(created.sentiment),
-        named_entities=json.loads(created.namedEntities),
-        note=created.note,
-        created_at=created.createdAt
-    )
+def save_article(article: SavedArticleCreate, db: Session = Depends(get_db)):
+    try:
+        db_article = SavedArticle(
+            title=article.title,
+            url=article.url,
+            summary=article.summary,
+            top_words=json.dumps(article.top_words),
+            sentiment=json.dumps(article.sentiment),
+            named_entities=json.dumps(article.named_entities),
+            note=article.note,
+        )
+        db.add(db_article)
+        db.commit()
+        db.refresh(db_article)
+        return SavedArticleResponse(
+            id=db_article.id,
+            title=db_article.title,
+            url=db_article.url,
+            summary=db_article.summary,
+            top_words=json.loads(db_article.top_words),
+            sentiment=json.loads(db_article.sentiment),
+            named_entities=json.loads(db_article.named_entities),
+            note=db_article.note,
+            created_at=db_article.created_at,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al guardar artículo: {str(e)}")
 
 @router.get("/saved_articles/", response_model=List[SavedArticleResponse])
-async def list_saved_articles():
-    articles = await prisma.savedarticle.find_many()
-    return [
-        SavedArticleResponse(
-            id=a.id,
-            title=a.title,
-            url=a.url,
-            summary=a.summary,
-            top_words=json.loads(a.topWords),  
-            sentiment=json.loads(a.sentiment), 
-            named_entities=json.loads(a.namedEntities),  
-            note=a.note,
-            created_at=a.createdAt
-        ) for a in articles
-    ]
-
-@router.delete("/saved_articles/{article_id}")
-async def delete_article(article_id: int):
-    article = await prisma.savedarticle.find_unique(where={"id": article_id})
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    await prisma.savedarticle.delete(where={"id": article_id})
-    return {"detail": "Article deleted"}
+def list_saved_articles(db: Session = Depends(get_db)):
+    try:
+        articles = db.query(SavedArticle).all()
+        return [
+            SavedArticleResponse(
+                id=a.id,
+                title=a.title,
+                url=a.url,
+                summary=a.summary,
+                top_words=json.loads(a.top_words),
+                sentiment=json.loads(a.sentiment),
+                named_entities=json.loads(a.named_entities),
+                note=a.note,
+                created_at=a.created_at,
+            )
+            for a in articles
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al listar artículos: {str(e)}")

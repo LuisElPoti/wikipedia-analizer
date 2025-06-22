@@ -1,15 +1,14 @@
 from fastapi import FastAPI
-from app.api.routes import articles, saved_articles
-from app.db.prisma_client import connect_prisma, disconnect_prisma
+from api.routes import articles, saved_articles
 from contextlib import asynccontextmanager
+from db.models import Base
+from db.session import engine  # SQLAlchemy engine
+import uvicorn
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await connect_prisma()
-    yield
-    await disconnect_prisma()
-    
-app = FastAPI(title="Wikipedia Analyzer Backend", lifespan=lifespan)
+# Crear tablas al inicio
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="Wikipedia Analyzer Backend")
 
 @app.get("/")
 def root():
@@ -18,5 +17,7 @@ def root():
 app.include_router(articles.router)
 app.include_router(saved_articles.router)
 
+#correr el servidor con uvicorn main:app --reloa
 
-
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

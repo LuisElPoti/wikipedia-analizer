@@ -12,8 +12,8 @@ class SavedArticleCreate(BaseModel):
     note: Optional[str] = None
 
 class SavedArticleResponse(SavedArticleCreate):
-    id: int
+    id: int 
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
