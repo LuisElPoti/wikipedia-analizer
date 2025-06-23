@@ -11,4 +11,4 @@ pytest
 httpx
 pytest-asyncio
 sqlalchemy
-psycopg2
+psycopg2-binary

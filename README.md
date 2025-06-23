@@ -28,7 +28,7 @@ Todos los endpoints están documentados en Swagger:
 ## ⚙️ Cómo correr el backend
 
 ### Opción recomendada (Docker)
-
+- Tener docker abierto
 ```bash
 docker-compose up --buil
 ```
