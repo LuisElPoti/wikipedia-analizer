@@ -8,7 +8,7 @@ from schemas.article import ArticleResponse
 
 router = APIRouter()
 
-@router.get("/search", response_model=List[dict])
+@router.get("/search", response_model=dict)
 def search_articles(q: str):
     try:
         results = search_wikipedia(q)
@@ -26,8 +26,7 @@ def get_article(title: str):
         if not article:
             raise HTTPException(status_code=404, detail=f"Article '{title}' not found")
         
-        summary_data = get_article_summary(title)
-        url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+        summary_data, url = get_article_summary(title)
         print("pase el summary")
         if not summary_data:
             raise HTTPException(status_code=404, detail=f"Summary for article '{title}' not found")

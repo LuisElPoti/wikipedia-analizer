@@ -10,15 +10,22 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { LoginForm } from "../components/login-form"
 import { ArticleDetailModal } from "../components/article-detail-modal"
+import { searchArticles, getArticleDetail, saveArticle, getSavedArticles, getSavedArticleById, updateArticle, deleteArticle} from "@/lib/api"
+
 
 interface WikipediaArticle {
+  id?: number
   pageid: number
   title: string
+  summary?: string
+  url?: string
   extract: string
   thumbnail?: {
     source: string
   }
+  note?: string
 }
+
 
 export default function WikipediaSearch() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -33,6 +40,8 @@ export default function WikipediaSearch() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchCurrentPage, setSearchCurrentPage] = useState(1)
   const [searchResultsPerPage] = useState(10)
+  const [editingNote, setEditingNote] = useState<number | null>(null)
+   const [noteText, setNoteText] = useState("")
 
   useEffect(() => {
     // Verificar si hay una sesión guardada
@@ -40,14 +49,19 @@ export default function WikipediaSearch() {
     if (savedUser) {
       setIsLoggedIn(true)
       setCurrentUser(savedUser)
-    }
-
-    // Cargar artículos guardados
-    const saved = localStorage.getItem("savedArticles")
-    if (saved) {
-      setSavedArticles(JSON.parse(saved))
+      loadSavedArticles()
     }
   }, [])
+
+  const loadSavedArticles = async () => {
+    try {
+      const articles = await getSavedArticles()
+      setSavedArticles(articles)
+    } catch (error) {
+      console.error("Error cargando artículos guardados:", error)
+      setSavedArticles([])
+    }
+  }
 
   const handleLogin = (username: string) => {
     setIsLoggedIn(true)
@@ -65,49 +79,100 @@ export default function WikipediaSearch() {
     if (!searchQuery.trim()) return
 
     setIsLoading(true)
-    setSearchCurrentPage(1) // Reset a la primera página
+    setSearchResults([])
+    setSearchCurrentPage(1)
+
     try {
-      // Buscar múltiples resultados
-      const searchResponse = await fetch(
-        `https://es.wikipedia.org/w/api.php?action=query&format=json&prop=extracts|pageimages&exintro=true&explaintext=true&exlimit=20&generator=search&gsrsearch=${encodeURIComponent(searchQuery)}&gsrlimit=20&origin=*`,
-      )
-
-      const searchData = await searchResponse.json()
-      if (searchData.query?.pages) {
-        const articles = Object.values(searchData.query.pages).map((page: any) => ({
-          pageid: page.pageid,
-          title: page.title,
-          extract: page.extract || "Sin descripción disponible",
-          thumbnail: page.thumbnail,
-        }))
-        setSearchResults(articles)
-      } else {
+      const results = await searchArticles(searchQuery)
+      if (!results || results.length === 0) {
         setSearchResults([])
+        return
       }
+      
+      console.log("Resultados de búsqueda:", results)
+      const articles = Object.values(results).map((item: any) => ({
+        pageid: item.pageid,
+        title: item.title,
+        extract: item.extract,
+        thumbnail: item.thumbnail ? { source: item.thumbnail.source } : undefined,
+      }))
+
+      setSearchResults(articles)
+      setSearchCurrentPage(1)
     } catch (error) {
-      console.error("Error buscando en Wikipedia:", error)
+      console.error("Error buscando artículos:", error)
       setSearchResults([])
-    }
-    setIsLoading(false)
-  }
-
-  const saveArticle = (article: WikipediaArticle) => {
-    const isAlreadySaved = savedArticles.some((saved) => saved.pageid === article.pageid)
-    if (!isAlreadySaved) {
-      const newSavedArticles = [...savedArticles, article]
-      setSavedArticles(newSavedArticles)
-      localStorage.setItem("savedArticles", JSON.stringify(newSavedArticles))
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const removeSavedArticle = (pageid: number) => {
-    const newSavedArticles = savedArticles.filter((article) => article.pageid !== pageid)
-    setSavedArticles(newSavedArticles)
-    localStorage.setItem("savedArticles", JSON.stringify(newSavedArticles))
+  // const saveArticle = (article: WikipediaArticle) => {
+  //   const isAlreadySaved = savedArticles.some((saved) => saved.pageid === article.pageid)
+  //   if (!isAlreadySaved) {
+  //     const newSavedArticles = [...savedArticles, article]
+  //     setSavedArticles(newSavedArticles)
+  //     localStorage.setItem("savedArticles", JSON.stringify(newSavedArticles))
+  //   }
+  // }
+
+  const handleUpdateArticle = async (id: number, note: string) => {
+    try {
+      const updatedArticle = await updateArticle(id, note)
+      setSavedArticles((prev) =>
+        prev.map((article) => (article.id === id ? { ...article, note: updatedArticle.note } : article)),
+      )
+    } catch (error) {
+      console.error("Error actualizando artículo:", error)
+    }
+  }
+  
+  // Iniciar edición de nota
+  const startEditingNote = (id: number, currentNote?: string) => {
+    setEditingNote(id)
+    setNoteText(currentNote || "")
   }
 
-  const isArticleSaved = (pageid: number) => {
-    return savedArticles.some((article) => article.pageid === pageid)
+  const saveNote = (id: number) => {
+    handleUpdateArticle(id, noteText)
+    setEditingNote(null)
+    setNoteText("")
+  }
+
+  const cancelEditingNote = () => {
+    setEditingNote(null)
+    setNoteText("")
+  }
+
+  const handleSaveArticle = async (article: WikipediaArticle) => {
+    const isAlreadySaved = savedArticles.some((saved) => saved.title === article.title)
+    if (isAlreadySaved) return
+
+    console.log("Guardando artículo:", savedArticles)
+    try {
+      const detail = await getArticleDetail(article.title)
+      
+      console.log("Detalles del artículo:", detail)
+
+      const saved = await saveArticle(detail)
+      setSavedArticles((prev) => [...prev, saved])
+    } catch (error) {
+      console.error("Error guardando el artículo:", error)
+    }
+  }
+
+  const removeSavedArticle = async (id: number) => {
+    try {
+      await deleteArticle(id)
+      setSavedArticles((prev) => prev.filter((article) => article.id !== id))
+    } catch (error) {
+      console.error("Error eliminando artículo:", error)
+    }
+  }
+
+
+  const isArticleSaved = (title: string) => {
+    return savedArticles.some((article) => article.title === title)
   }
 
   const openArticleModal = (article: WikipediaArticle) => {
@@ -247,17 +312,17 @@ export default function WikipediaSearch() {
                           </h3>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              isArticleSaved(article.pageid) ? removeSavedArticle(article.pageid) : saveArticle(article)
-                            }}
-                            className={isArticleSaved(article.pageid) ? "text-blue-600" : ""}
+                            onClick={() => handleSaveArticle(article)}
+                            disabled={isArticleSaved(article.title)}
                           >
-                            {isArticleSaved(article.pageid) ? (
-                              <BookmarkCheck className="w-4 h-4" />
+                            {isArticleSaved(article.title) ? (
+                              <>
+                                <BookmarkCheck className="mr-2 h-4 w-4" /> Guardado
+                              </>
                             ) : (
-                              <BookmarkPlus className="w-4 h-4" />
+                              <>
+                                <BookmarkPlus className="mr-2 h-4 w-4" /> Guardar
+                              </>
                             )}
                           </Button>
                         </div>
@@ -272,8 +337,8 @@ export default function WikipediaSearch() {
                             onClick={(e) => {
                               e.stopPropagation()
                               window.open(
-                                `https://es.wikipedia.org/wiki/${encodeURIComponent(article.title)}`,
-                                "_blank",
+                                  `${article.url || `https://es.wikipedia.org/wiki/${encodeURIComponent(article.title)}`}`,
+                                  "_blank",
                               )
                             }}
                           >
@@ -376,7 +441,7 @@ export default function WikipediaSearch() {
               <>
                 <div className="space-y-4">
                   {currentArticles.map((article) => (
-                    <Card key={article.pageid} className="hover:shadow-md transition-shadow">
+                    <Card key={article.title} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
@@ -385,25 +450,75 @@ export default function WikipediaSearch() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => removeSavedArticle(article.pageid)}
+                                onClick={() => removeSavedArticle(article.id!)}
                                 className="text-blue-600"
                               >
                                 <BookmarkCheck className="w-4 h-4" />
                               </Button>
                             </div>
-                            <p className="text-gray-700 leading-relaxed">{article.extract}</p>
+                            <p className="text-gray-700 leading-relaxed">{article.summary}</p>
+
+                            {/* Sección de notas */}
+                            <div className="border-t pt-3 mt-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-medium text-gray-600">Mi Nota:</h4>
+                                {editingNote !== article.id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => startEditingNote(article.id!, article.note)}
+                                    className="text-xs"
+                                  >
+                                    {article.note ? "Editar" : "Agregar nota"}
+                                  </Button>
+                                )}
+                              </div>
+
+                              {editingNote === article.id ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    value={noteText}
+                                    onChange={(e) => setNoteText(e.target.value)}
+                                    placeholder="Escribe tu nota personal sobre este artículo..."
+                                    className="w-full p-2 border border-gray-300 rounded-md text-sm resize-none"
+                                    rows={3}
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => saveNote(article.id!)}>
+                                      Guardar
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={cancelEditingNote}>
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="min-h-[2rem]">
+                                  {article.note ? (
+                                    <p className="text-sm text-gray-600 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400">
+                                      {article.note}
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-gray-400 italic">Sin notas</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
                             <Button
                               variant="link"
                               className="p-0 h-auto mt-2"
                               onClick={() =>
                                 window.open(
-                                  `https://es.wikipedia.org/wiki/${encodeURIComponent(article.title)}`,
+                                  `${article.url || `https://es.wikipedia.org/wiki/${encodeURIComponent(article.title)}`}`,
                                   "_blank",
                                 )
                               }
                             >
                               Leer artículo completo →
                             </Button>
+                            
                           </div>
                           {article.thumbnail && (
                             <img
@@ -469,8 +584,8 @@ export default function WikipediaSearch() {
         article={selectedArticle}
         isOpen={isModalOpen}
         onClose={closeArticleModal}
-        onSave={saveArticle}
-        isSaved={selectedArticle ? isArticleSaved(selectedArticle.pageid) : false}
+        onSave={handleSaveArticle}
+        isSaved={selectedArticle ? isArticleSaved(selectedArticle.title) : false}
       />
     </div>
   )

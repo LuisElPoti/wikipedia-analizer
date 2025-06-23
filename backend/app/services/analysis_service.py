@@ -20,7 +20,7 @@ def analyze_text(text: str) -> List[str]:
     doc = nlp(text)
     words = [token.text.lower() for token in doc if token.is_alpha and not token.is_stop]
     word_counts = Counter(words)
-    return [word for word, _ in word_counts.most_common(10)]
+    return [word for word, _ in word_counts.most_common(5)]
 
 
 def analyze_sentiment(text: str) -> str:

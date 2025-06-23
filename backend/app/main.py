@@ -2,13 +2,23 @@ from fastapi import FastAPI
 from api.routes import articles, saved_articles
 from contextlib import asynccontextmanager
 from db.models import Base
-from db.session import engine  # SQLAlchemy engine
+from db.session import engine
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # Crear tablas al inicio
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Wikipedia Analyzer Backend")
+
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permitir todas las origines
+    allow_credentials=True,
+    allow_methods=["*"],  # Permitir todos los métodos HTTP
+    allow_headers=["*"],  # Permitir todos los headers
+)
 
 @app.get("/")
 def root():

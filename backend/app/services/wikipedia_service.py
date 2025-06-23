@@ -14,15 +14,20 @@ def search_wikipedia(query: str) -> dict:
     url = "https://en.wikipedia.org/w/api.php"
     params = {
         "action": "query",
-        "list": "search",
-        "srsearch": query,
         "format": "json",
+        "prop": "extracts|pageimages",
+        "exintro": True,
+        "generator": "search",
+        "explaintext": True,
+        "gsrsearch": query,
+        "origins": "*",
+        
     }
     
     response = requests.get(url, params=params)   
     response.raise_for_status()
     data = response.json()
-    return data.get("query", {}).get("search", [])
+    return  data.get("query", {}).get("pages", {})
 
 
 def get_full_article(title: str) -> str:
@@ -59,5 +64,5 @@ def get_article_summary(title: str):
     response.raise_for_status()
     data = response.json()
     
-    # Retornar el extract
-    return data.get("extract", "")
+    # Retornar el extract y url del artículo
+    return data.get("extract", ""), data.get("content_urls", {}).get("desktop", {}).get("page", "")

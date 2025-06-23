@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { BookmarkPlus, BookmarkCheck, ExternalLink, Clock, FileText, TrendingUp, Loader2 } from "lucide-react"
-import { processArticleSummary, generateArticleAnalysis } from "../actions"
+// import { processArticleSummary, generateArticleAnalysis } from "../actions"
+import { getArticleDetail} from "@/lib/api"
 
 interface WikipediaArticle {
   pageid: number
@@ -34,6 +35,9 @@ interface ProcessedData {
 
 interface AnalysisData {
   topics: string[]
+  url: string
+  mostFrequentWords: string[] 
+  sentiment: string
   complexity: string
   wordCount: number
   sentences: number
@@ -63,16 +67,29 @@ export function ArticleDetailModal({ article, isOpen, onClose, onSave, isSaved }
     setAnalysisData(null)
 
     try {
-      // Procesar resumen y análisis en paralelo
-      const [processed, analysis] = await Promise.all([
-        processArticleSummary(article.extract, article.title),
-        generateArticleAnalysis(article.title, article.extract),
-      ])
+      const detail = await getArticleDetail(article.title);
+      console.log("Detalles del artículo:", detail)
+      setProcessedData({
+        processedSummary: detail.summary,
+        wordCount: detail.analisis.word_count,
+        readingTime: detail.analisis.estimated_reading_time,
+      });
 
-      setProcessedData(processed)
-      setAnalysisData(analysis)
+      setAnalysisData({
+        url: detail.url,
+        topics: detail.analisis.topics,
+        mostFrequentWords: detail.analisis.frequent_words,
+        sentiment: detail.analisis.sentiment,
+        complexity: detail.analisis.complexity,
+        wordCount: detail.analisis.word_count,
+        sentences: detail.analisis.sentences,
+        avgWordsPerSentence: detail.analisis.avg_words_per_sentence,
+        estimatedReadingTime: detail.analisis.estimated_reading_time,
+        keyInsights: detail.analisis.key_insights,
+      });
+
     } catch (error) {
-      console.error("Error procesando artículo:", error)
+      console.error("Error cargando detalles del artículo:", error)
     } finally {
       setIsProcessing(false)
       setIsAnalyzing(false)
@@ -113,6 +130,8 @@ export function ArticleDetailModal({ article, isOpen, onClose, onSave, isSaved }
                     </>
                   )}
                 </Button>
+
+                
                 <Button
                   variant="outline"
                   onClick={() =>
@@ -178,16 +197,54 @@ export function ArticleDetailModal({ article, isOpen, onClose, onSave, isSaved }
                 </div>
               ) : analysisData ? (
                 <div className="space-y-4">
-                  {/* Temas principales */}
-                  <div>
-                    <h4 className="font-medium mb-2">Temas Principales:</h4>
-                    <div className="flex gap-2 flex-wrap">
-                      {analysisData.topics.map((topic, index) => (
-                        <Badge key={index} variant="secondary">
-                          {topic}
-                        </Badge>
-                      ))}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* Temas principales */}
+                    <div>
+                      <h4 className="font-medium mb-2">Temas Principales:</h4>
+                      <div className="flex gap-2 flex-wrap">
+                        {analysisData.topics.map((topic, index) => (
+                          <Badge key={index} variant="secondary">
+                            {topic}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* Palabras más repetidas */}
+                    {analysisData.mostFrequentWords && analysisData.mostFrequentWords.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Palabras Más Repetidas:</h4>
+                        <div className="flex gap-2 flex-wrap">
+                          {analysisData.mostFrequentWords.map((word, index) => (
+                            <Badge key={index} variant="outline"> {/* Usar "outline" para diferenciar o "secondary" si quieres igual */}
+                              {word}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sentimiento */}
+                    {analysisData.sentiment && (
+                      <div>
+                        <h4 className="font-medium mb-2">Análisis de Sentimiento:</h4>
+                        <div className="flex items-center flex gap-1 p-2  bg-gray-50 rounded-lg justify-center">
+                          {analysisData.sentiment === "positivo" && (
+                            <span className="text-green-100 text-xl animate-bounce-once">✅</span> // Emoji feliz animado
+                          )}
+                          {analysisData.sentiment === "negativo" && (
+                            <span className="text-red-100 text-xl animate-shake">❌</span> // Emoji enojado animado
+                          )}
+                          {analysisData.sentiment === "neutro" && (
+                            <span className="text-gray-100 text-xl animate-pulse">⚪</span> // Emoji neutral pulsando
+                          )}
+                          <span className="text-xl font-semibold capitalize">
+                            {analysisData.sentiment}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Métricas */}
@@ -229,15 +286,7 @@ export function ArticleDetailModal({ article, isOpen, onClose, onSave, isSaved }
             </CardContent>
           </Card>
 
-          {/* Extracto original */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Extracto Original</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 leading-relaxed text-sm">{article.extract}</p>
-            </CardContent>
-          </Card>
+          
         </div>
       </DialogContent>
     </Dialog>

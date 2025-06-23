@@ -14,6 +14,8 @@ class SavedArticle(Base):
     summary = Column(Text, nullable=False)
     note = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    analysis = relationship("ArticleAnalysis", back_populates="article", cascade="all, delete-orphan", uselist=False, passive_deletes=True)
 
 class ArticleAnalysis(Base):
     __tablename__ = "article_analyses"
@@ -30,4 +32,4 @@ class ArticleAnalysis(Base):
     estimated_reading_time = Column(Integer, nullable=False)
     key_insights = Column(JSON, nullable=False)
 
-    article = relationship("SavedArticle", backref="analysis", uselist=False)
+    article = relationship("SavedArticle", back_populates="analysis")
