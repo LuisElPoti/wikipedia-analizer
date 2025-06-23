@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 from typing import List
-from schemas.saved_article import SavedArticleResponse, SavedArticleCreate
+from schemas.saved_article import SavedArticleResponse, SavedArticleCreate, ArticleAnalysis
 from db.deps import get_db
 from db.models import SavedArticle
 import json
@@ -15,14 +15,29 @@ def save_article(article: SavedArticleCreate, db: Session = Depends(get_db)):
             title=article.title,
             url=article.url,
             summary=article.summary,
-            top_words=json.dumps(article.top_words),
-            sentiment=json.dumps(article.sentiment),
-            named_entities=json.dumps(article.named_entities),
             note=article.note,
         )
         db.add(db_article)
         db.commit()
         db.refresh(db_article)
+        
+        # 2. Guardar análisis relacionado
+        analysis = article.analisis  # ← Esto debe venir dentro del payload del artículo
+        db_analysis = ArticleAnalysis(
+            article_id=db_article.id,
+            frequent_words=analysis.frequent_words,
+            sentiment=analysis.sentiment,
+            topics=analysis.topics,
+            complexity=analysis.complexity,
+            word_count=analysis.word_count,
+            sentences=analysis.sentences,
+            avg_words_per_sentence=analysis.avg_words_per_sentence,
+            estimated_reading_time=analysis.estimated_reading_time,
+            key_insights=analysis.key_insights,
+        )
+        db.add(db_analysis)
+        db.commit()
+
         return SavedArticleResponse(
             id=db_article.id,
             title=db_article.title,
@@ -57,3 +72,44 @@ def list_saved_articles(db: Session = Depends(get_db)):
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al listar artículos: {str(e)}")
+
+
+@router.delete("/saved_articles/{article_id}", status_code=204)
+def delete_article(article_id: int = Path(..., gt=0), db: Session = Depends(get_db)):
+    article = db.query(SavedArticle).filter(SavedArticle.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Artículo no encontrado")
+    db.delete(article)
+    db.commit()
+    return
+
+
+# PUT /saved_articles/{article_id}
+@router.put("/saved_articles/{article_id}", response_model=SavedArticleResponse)
+def update_article(article_id: int, updated: SavedArticleCreate, db: Session = Depends(get_db)):
+    article = db.query(SavedArticle).filter(SavedArticle.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Artículo no encontrado")
+
+    article.title = updated.title
+    article.url = updated.url
+    article.summary = updated.summary
+    article.top_words = json.dumps(updated.top_words)
+    article.sentiment = json.dumps(updated.sentiment)
+    article.named_entities = json.dumps(updated.named_entities)
+    article.note = updated.note
+
+    db.commit()
+    db.refresh(article)
+
+    return SavedArticleResponse(
+        id=article.id,
+        title=article.title,
+        url=article.url,
+        summary=article.summary,
+        top_words=json.loads(article.top_words),
+        sentiment=json.loads(article.sentiment),
+        named_entities=json.loads(article.named_entities),
+        note=article.note,
+        created_at=article.created_at,
+    )
