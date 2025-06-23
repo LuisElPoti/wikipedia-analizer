@@ -442,7 +442,7 @@ export default function WikipediaSearch() {
                 <div className="space-y-4">
                   {currentArticles.map((article) => (
                     <Card key={article.title} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
+                      <CardContent className="p-6" onClick={() => openArticleModal(article)}>
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
@@ -466,7 +466,11 @@ export default function WikipediaSearch() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => startEditingNote(article.id!, article.note)}
+                                    onClick={(e) => {
+                                      e.stopPropagation() 
+                                      startEditingNote(article.id!, article.note)
+                                      
+                                    }}
                                     className="text-xs"
                                   >
                                     {article.note ? "Editar" : "Agregar nota"}
@@ -481,14 +485,22 @@ export default function WikipediaSearch() {
                                     onChange={(e) => setNoteText(e.target.value)}
                                     placeholder="Escribe tu nota personal sobre este artículo..."
                                     className="w-full p-2 border border-gray-300 rounded-md text-sm resize-none"
+                                    onClick={(e) => e.stopPropagation()}
                                     rows={3}
                                     autoFocus
                                   />
                                   <div className="flex gap-2">
-                                    <Button size="sm" onClick={() => saveNote(article.id!)}>
+                                    <Button size="sm" onClick={(e) => {
+                                      e.stopPropagation()
+                                      saveNote(article.id!)
+                                    }}>
                                       Guardar
                                     </Button>
-                                    <Button size="sm" variant="outline" onClick={cancelEditingNote}>
+                                    <Button size="sm" variant="outline" onClick={(e) => {
+                                      e.stopPropagation()
+                                      cancelEditingNote()
+                                      
+                                    }}>
                                       Cancelar
                                     </Button>
                                   </div>

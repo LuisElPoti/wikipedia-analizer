@@ -6,7 +6,9 @@ Este es el proyecto de **Wikipedia Analyzer**, una aplicación que permite busca
 
 - Buscar artículos en Wikipedia.
 - Obtener resumen y contenido completo.
-- Analizar texto: palabras clave, análisis de sentimiento y entidades nombradas.
+- Analizar texto: palabras clave, análisis de sentimiento.
+- Temas principales, Palabras mas repetidas, complejidad texto, oraciones, palabras/oracion, min. de lectura.
+- Insights claves sobre el articulo
 - Guardar artículos analizados con notas opcionales.
 - Listar artículos guardados.
 
@@ -21,29 +23,16 @@ Todos los endpoints están documentados en Swagger:
 - **TextBlob**: Análisis de sentimiento y palabras más comunes.
 - **spaCy**: Detección de entidades nombradas (NLP).
 - **Uvicorn**: Servidor ASGI para correr FastAPI.
-- **Docker / Docker Compose**: Contenedores para el entorno de ejecución.
 - **Frontend**: Se utilizó Next js para la realziación del frontend
 
 
 ## ⚙️ Cómo correr el backend
 
-### Opción recomendada (Docker)
-- Tener docker abierto
-```bash
-docker-compose up --buil
-```
-
-- Backend disponible en http://localhost:8000
-- PostgreSQL ya configurado
-- Migraciones automáticas
-
-### Opción manual (sin Docker)
-
 ```bash
 python -m venv venv
 source venv/bin/activate  # o venv\Scripts\activate en Windows
 pip install -r requirements.txt
-cd app
+cd backend/app
 python main.py
 ```
 NOTA: Asegúrate de tener un PostgreSQL local y configurar DATABASE_URL en .env.
@@ -52,6 +41,7 @@ NOTA: Asegúrate de tener un PostgreSQL local y configurar DATABASE_URL en .env.
 ## ⚙️ Cómo correr el Frontend
 
 ```bash
+cd frontend
 npm i
 npm run dev
 ```
