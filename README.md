@@ -56,4 +56,4 @@ NOTA: Asegúrate de tener NEXT_PUBLIC_API_URL = http://localhost:8000 en .env.
 
 - Top palabras se filtran usando solo tokens alfabéticos y excluyen stopwords.
 
-- Prisma facilita el trabajo con PostgreSQL y mantiene el esquema tipado.
+- Análisis básico realizado para dar mayor información sobre el artículo de manera resumida.
