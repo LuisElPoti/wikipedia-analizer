@@ -35,5 +35,5 @@ def override_get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
-# Crear tablas para test (solo si quieres hacerlo automáticamente)
+# Crear tablas para test 
 Base.metadata.create_all(bind=engine_test)

@@ -9,7 +9,7 @@ nlp = spacy.load("en_core_web_sm")
 
 def analyze_text(text: str) -> List[str]:
     """
-    Analiza el texto para obtener las 10 palabras más comunes excluyendo stopwords.
+    Analiza el texto para obtener las 5 palabras más comunes excluyendo stopwords.
     
     Args:
         text (str): Texto a analizar.
@@ -31,11 +31,10 @@ def analyze_sentiment(text: str) -> str:
         text (str): Texto a analizar.
     
     Returns:
-        Dict[str, float]: Diccionario con 'polarity' (-1 a 1) y 'subjectivity' (0 a 1).
+        str: Sentimiento del texto ("positivo", "negativo" o "neutral").
     """
     blob = TextBlob(text)
     polarity = blob.sentiment.polarity
-    subjectivity = blob.sentiment.subjectivity
 
     if polarity > 0.1:
         sentiment = "positivo"
@@ -52,7 +51,6 @@ def generate_article_analysis(extract: str) -> Dict:
     Genera análisis del resumen: complejidad, tiempo de lectura, temas y estadísticas básicas.
 
     Args:
-        title (str): Título del artículo
         extract (str): Resumen o texto del artículo
 
     Returns:
@@ -105,8 +103,6 @@ def generate_article_analysis(extract: str) -> Dict:
         "estimated_reading_time": estimated_reading_time,
         "key_insights": insights,
     }
-    # Debugging output
-    print(result)
     
     return result
     

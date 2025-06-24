@@ -14,20 +14,20 @@ app = FastAPI(title="Wikipedia Analyzer Backend")
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir todas las origines
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Permitir todos los métodos HTTP
-    allow_headers=["*"],  # Permitir todos los headers
+    allow_methods=["*"], 
+    allow_headers=["*"],  
 )
 
 @app.get("/")
 def root():
-    return {"message": "Wikipedia backend funcionando correctamente"}
+    return {"message": "Wikipedia backend funcionando correctamente", "version": "1.0"}
 
 app.include_router(articles.router)
 app.include_router(saved_articles.router)
 
-#correr el servidor con uvicorn main:app --reloa
+#correr el servidor con uvicorn main:app --reload
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

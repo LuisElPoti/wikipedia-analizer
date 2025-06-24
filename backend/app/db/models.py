@@ -5,6 +5,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
+# Esta clase define la estructura de la tabla "saved_articles" y su relación con "article_analyses"
 class SavedArticle(Base):
     __tablename__ = "saved_articles"
 
@@ -17,6 +19,7 @@ class SavedArticle(Base):
     
     analysis = relationship("ArticleAnalysis", back_populates="article", cascade="all, delete-orphan", uselist=False, passive_deletes=True)
 
+# Esta clase define la estructura de la tabla "article_analyses" y su relación con "saved_articles"
 class ArticleAnalysis(Base):
     __tablename__ = "article_analyses"
 

@@ -3,13 +3,13 @@ import requests
 
 def search_wikipedia(query: str) -> dict:
     """
-    Search Wikipedia for a given query and return the results.
+    Busqueda en Wikipedia utilizando la API de MediaWiki.
     
     Args:
-        query (str): The search term to look up on Wikipedia.
+        query (str): el termino de búsqueda.
         
     Returns:
-        dict: A dictionary containing the search results.
+        dict: Un diccionario con los resultados de la búsqueda.
     """
     url = "https://en.wikipedia.org/w/api.php"
     params = {
@@ -32,13 +32,13 @@ def search_wikipedia(query: str) -> dict:
 
 def get_full_article(title: str) -> str:
     """
-    Get the full text of a Wikipedia article by its title.
+    Obtener el texto completo de un artículo de Wikipedia.
     
     Args:
-        title (str): The title of the Wikipedia article.
+        title (str): El titulo del artículo.
         
     Returns:
-        str: The full text of the article.
+        str: El texto completo del artículo.
     """
     url = "https://en.wikipedia.org/w/api.php"
     params = {
@@ -56,7 +56,14 @@ def get_full_article(title: str) -> str:
     page = next(iter(data["query"]["pages"].values()))
     return page.get("extract", "")
 
-def get_article_summary(title: str):
+def get_article_summary(title: str) -> str:
+    
+    """Obtener un resumen de un artículo de Wikipedia.
+    Args:
+        title (str): El título del artículo.
+    Returns:
+        str: El texto resumido.
+    """
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{title}"
     
     # Obtener el extract del artículo
@@ -66,3 +73,4 @@ def get_article_summary(title: str):
     
     # Retornar el extract y url del artículo
     return data.get("extract", ""), data.get("content_urls", {}).get("desktop", {}).get("page", "")
+

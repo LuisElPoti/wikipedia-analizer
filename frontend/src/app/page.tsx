@@ -35,11 +35,11 @@ export default function WikipediaSearch() {
   const [savedArticles, setSavedArticles] = useState<WikipediaArticle[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [articlesPerPage] = useState(5) // 5 artículos por página
+  const [articlesPerPage] = useState(5) // articulos guardados por pagina
   const [selectedArticle, setSelectedArticle] = useState<WikipediaArticle | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchCurrentPage, setSearchCurrentPage] = useState(1)
-  const [searchResultsPerPage] = useState(10)
+  const [searchResultsPerPage] = useState(10) // articulos busqueda por paginas
   const [editingNote, setEditingNote] = useState<number | null>(null)
    const [noteText, setNoteText] = useState("")
 
@@ -106,15 +106,6 @@ export default function WikipediaSearch() {
       setIsLoading(false)
     }
   }
-
-  // const saveArticle = (article: WikipediaArticle) => {
-  //   const isAlreadySaved = savedArticles.some((saved) => saved.pageid === article.pageid)
-  //   if (!isAlreadySaved) {
-  //     const newSavedArticles = [...savedArticles, article]
-  //     setSavedArticles(newSavedArticles)
-  //     localStorage.setItem("savedArticles", JSON.stringify(newSavedArticles))
-  //   }
-  // }
 
   const handleUpdateArticle = async (id: number, note: string) => {
     try {

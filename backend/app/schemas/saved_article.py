@@ -25,7 +25,7 @@ class ArticleAnalysisCreate(BaseModel):
     word_count: int
     sentences: int
     avg_words_per_sentence: float
-    estimated_reading_time: int  # en minutos
+    estimated_reading_time: int  
     key_insights: List[str]
         
 class SavedArticleCreate(BaseModel):
